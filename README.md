@@ -17,6 +17,9 @@ Supabase 대시보드 → **SQL Editor**에서 `supabase/schema.sql` 파일 내�
 `program_participants`, `program_sessions`, `attendance`, `schedules`, `notices`, `memos`,
 `profiles` 테이블과 RLS 정책이 생성됩니다.
 
+이미 `schema.sql`을 한 번 실행한 적이 있다면(Google 로그인 전환 이전), 전체를 다시 실행할 필요 없이
+`supabase/migrations/0002_google_oauth_profile.sql`만 추가로 실행하면 됩니다.
+
 ### 2. 환경변수
 
 `.env.local`에 아래 값을 설정합니다 (Supabase 프로젝트 Settings → API에서 확인).
@@ -26,14 +29,35 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-### 3. 개발 서버 실행
+### 3. Google 로그인(OAuth) 설정
+
+로그인/회원가입은 Google 계정으로만 진행됩니다. 아래 두 곳을 설정해야 합니다.
+
+**Google Cloud Console** ([console.cloud.google.com](https://console.cloud.google.com) → APIs & Services → Credentials)
+1. OAuth 2.0 클라이언트 ID 생성 (애플리케이션 유형: 웹 애플리케이션)
+2. **승인된 리디렉션 URI**에 아래 주소 추가:
+   ```
+   https://<프로젝트-ref>.supabase.co/auth/v1/callback
+   ```
+3. 발급된 **클라이언트 ID / 클라이언트 보안비밀**을 복사
+
+**Supabase 대시보드** → Authentication → Sign In / Providers → **Google**
+1. Google Provider를 켜고, 위에서 발급받은 클라이언트 ID/보안비밀 입력
+2. Authentication → URL Configuration → **Redirect URLs**에 아래 추가:
+   ```
+   http://localhost:3000/auth/callback
+   ```
+   (배포 후에는 실제 배포 도메인의 `/auth/callback`도 함께 추가)
+
+### 4. 개발 서버 실행
 
 ```bash
 npm install
 npm run dev
 ```
 
-[http://localhost:3000](http://localhost:3000) 접속 후 회원가입하면 바로 이용할 수 있습니다.
+[http://localhost:3000](http://localhost:3000) 접속 후 "Google 계정으로 계속하기"로 로그인하면,
+최초 1회 이름·소속기관(학교)·연락처를 입력하는 온보딩 화면으로 이동합니다.
 (내부 업무관리 시스템 특성상, 로그인한 담당자는 전체 데이터에 접근 가능합니다.)
 
 ## 주요 기능

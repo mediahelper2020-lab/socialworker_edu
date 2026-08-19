@@ -1,51 +1,47 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
-  const router = useRouter();
-  const supabase = createClient();
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+      <path
+        fill="#FFC107"
+        d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.3 2.7l5.7-5.7C33.6 6.5 29 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.4-.4-3.5z"
+      />
+      <path
+        fill="#FF3D00"
+        d="m6.3 14.7 6.6 4.8C14.7 15.9 19 13 24 13c2.8 0 5.3 1 7.3 2.7l5.7-5.7C33.6 6.5 29 4.5 24 4.5c-7.7 0-14.3 4.4-17.7 10.2z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24 43.5c5 0 9.5-1.9 12.9-5l-6-5c-1.9 1.3-4.3 2.1-6.9 2.1-5.3 0-9.7-3.6-11.3-8.4l-6.6 5.1C9.6 39 16.2 43.5 24 43.5z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.6l6 5C40.5 35.6 43.5 30.4 43.5 24c0-1.2-.1-2.4-.4-3.5z"
+      />
+    </svg>
+  );
+}
 
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function LoginPage() {
+  const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleGoogleLogin() {
     setLoading(true);
     setError(null);
-    setNotice(null);
-
-    if (mode === "login") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setError("이메일 또는 비밀번호가 올바르지 않습니다.");
-        setLoading(false);
-        return;
-      }
-      router.push("/dashboard");
-      router.refresh();
-    } else {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { name } },
-      });
-      if (error) {
-        setError(error.message);
-        setLoading(false);
-        return;
-      }
-      setNotice("가입이 완료되었습니다. 이메일 인증이 필요할 수 있습니다. 로그인해 주세요.");
-      setMode("login");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) {
+      setError("Google 로그인을 시작할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
@@ -56,75 +52,21 @@ export default function LoginPage() {
           <p className="mt-1 text-sm text-slate-500">교육복지 통합업무관리시스템</p>
         </div>
 
-        <div className="mb-6 flex rounded-lg bg-slate-100 p-1 text-sm font-medium">
-          <button
-            type="button"
-            onClick={() => setMode("login")}
-            className={`flex-1 rounded-md py-2 transition ${
-              mode === "login" ? "bg-white shadow text-blue-600" : "text-slate-500"
-            }`}
-          >
-            로그인
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("signup")}
-            className={`flex-1 rounded-md py-2 transition ${
-              mode === "signup" ? "bg-white shadow text-blue-600" : "text-slate-500"
-            }`}
-          >
-            회원가입
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+        >
+          <GoogleIcon />
+          {loading ? "이동 중..." : "Google 계정으로 계속하기"}
+        </button>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {mode === "signup" && (
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">이름</label>
-              <input
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                placeholder="김사랑"
-              />
-            </div>
-          )}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">이메일</label>
-            <input
-              required
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              placeholder="you@example.com"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">비밀번호</label>
-            <input
-              required
-              type="password"
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              placeholder="********"
-            />
-          </div>
+        {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          {notice && <p className="text-sm text-emerald-600">{notice}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
-          >
-            {loading ? "처리 중..." : mode === "login" ? "로그인" : "가입하기"}
-          </button>
-        </form>
+        <p className="mt-6 text-center text-xs text-slate-400">
+          처음 로그인하시면 이름·소속기관·연락처를 한 번 더 입력받아요.
+        </p>
       </div>
     </div>
   );
